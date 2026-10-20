@@ -32,6 +32,15 @@ trap 'rm -rf "$LOCK"; log "supervisor exiting"' EXIT INT TERM
 log "supervisor started (pid $$), check interval ${CHECK_INTERVAL}s"
 
 restarts=0
+
+is_alive() {
+    local p="${1:-}" st
+    [ -n "$p" ] || return 1
+    kill -0 "$p" 2>/dev/null || return 1
+    st=$(sed -n 's/^State:[[:space:]]*\([A-Za-z]\).*/\1/p' "/proc/${p}/status" 2>/dev/null)
+    [ -n "$st" ] && [ "$st" != "Z" ]
+}
+
 while true; do
     log "starting agent"
     nohup "$AGENT" -c "$CONFIG" >>"$AGENT_LOG" 2>&1 &
@@ -40,10 +49,16 @@ while true; do
     echo "$pid" >"${BASE}/agent.pid"
 
     next_check=$(( $(date +%s) + CHECK_INTERVAL ))
-    while kill -0 "$pid" 2>/dev/null; do
+    while is_alive "$pid"; do
         sleep 5
         if [ "$(date +%s)" -ge "$next_check" ]; then
             log "heartbeat: agent pid=$pid alive (restarts so far: $restarts)"
+            # make sure the 20-minute keepalive scheduler is still alive too
+            cron_pid=$(cat "${BASE}/.cron.lock/pid" 2>/dev/null || true)
+            if [ -n "${cron_pid}" ] && ! kill -0 "${cron_pid}" 2>/dev/null; then
+                log "supercronic is down, restarting it"
+                "${BASE}/start-cron.sh" >>"$SUP_LOG" 2>&1
+            fi
             next_check=$(( $(date +%s) + CHECK_INTERVAL ))
         fi
     done

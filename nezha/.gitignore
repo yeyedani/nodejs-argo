@@ -2,7 +2,11 @@
 config.yml
 config.yml.bak
 *.log
+*.state
 agent.zip
 agent.pid
+crontab.bak
 .supervisor.lock/
+.cron.lock/
+bin/
 nezha-agent

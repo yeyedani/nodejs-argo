@@ -1,0 +1,5 @@
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+
+# Nezha agent keepalive: every 20 minutes
+*/20 * * * * /workspace/nezha/keepalive.sh
