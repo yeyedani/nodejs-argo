@@ -1,0 +1,8 @@
+# runtime artifacts - never commit
+config.yml
+config.yml.bak
+*.log
+agent.zip
+agent.pid
+.supervisor.lock/
+nezha-agent
